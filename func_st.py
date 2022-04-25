@@ -1,15 +1,21 @@
 from calendar import month
 import datetime
+from tkinter import Y
 import streamlit as st
+import sqlalchemy
 from sql_engine import sql_engine
 from PIL import Image
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import os 
+
+engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
+engineAzure = sqlalchemy.create_engine(engine_path)
+
 @st.cache
-def read_df(fname):
-    return pd.read_feather(fname)
+def read_df(dfname):
+    return pd.read_feather(dfname)
 
 def center_title(string):
     """
@@ -77,7 +83,7 @@ def head_st(path_base, options = ["Sin opciones"], pass_fname=None):
 
 
 def pieza_a_pieza(dfname):
-    df = read_df(dfname)
+    #df = read_df(dfname)
     
     # SideBar
     stb = st.sidebar
@@ -93,7 +99,8 @@ def pieza_a_pieza(dfname):
     if periodo == "Un día":
         fecha_inicio = stb.date_input("Análisis día", datetime.date(2022, 1, 3))
         fecha_final = fecha_inicio + datetime.timedelta(days=1)
-        mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
+                
+        #mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
 
     else:    
         stb.write("Informes de la Marel")
@@ -122,32 +129,44 @@ def pieza_a_pieza(dfname):
             if  fecha_final - fecha_inicio > datetime.timedelta(weeks= 105): 
                 stb.error('No se puede elegir con una diferencia de más de 24 meses') 
                 return
-        mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
 
 
     stb.markdown(center_title('Filtrar por:'),
                  unsafe_allow_html=True)
     
-    df = df[mask]
-    
-    centro = stb.selectbox("Centro:", [''] + list(df['AlaImpPiezaWfeCentro'].unique()) )
-    jaula = stb.selectbox("Jaula:", [''] + list(df['AlaImpPiezaWfeJaula'].unique()) )
-    lote = stb.selectbox("Lote:", [''] + list(df['AlaImpPiezaWfeLote'].unique()) )
-    
-    if centro!='':
-        df = df[df['AlaImpPiezaWfeCentro'] == centro]
-    if jaula!='':
-        df = df[df['AlaImpPiezaWfeJaula'] == jaula]
-    if lote!='':
-        df = df[df['AlaImpPiezaWfeLote'] == lote]
-    df['AlaImpPiezaWfeFechaHora'] = pd.to_datetime(df['AlaImpPiezaWfeFechaHora'])
-    if len(df) == 0:
-        st.warning('Sin registros en el día ' + str(fecha_inicio) ) 
-        return
-    st.write("Vista Previa:")  
-    st.dataframe(df.head(10))
 
     if st.button("Graficar"):
+        ### Aquí define el df
+        query1 = """select * from [dbo].[vAlaya_recepcion] where AlaImpPiezaWfeFechaHora >= '{}' and AlaImpPiezaWfeFechaHora < '{}'""".format(fecha_inicio, fecha_final)
+        ## EngineAzure
+        df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+        
+        #
+        ## Filtro de fechas
+        if periodo == "Un día":  
+            mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
+        else:
+            mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
+        df = df[mask]
+        
+        centro = stb.selectbox("Centro:", [''] + list(df['AlaImpPiezaWfeCentro'].unique()) )
+        jaula = stb.selectbox("Jaula:", [''] + list(df['AlaImpPiezaWfeJaula'].unique()) )
+        lote = stb.selectbox("Lote:", [''] + list(df['AlaImpPiezaWfeLote'].unique()) )
+        
+        if centro!='':
+            df = df[df['AlaImpPiezaWfeCentro'] == centro]
+        if jaula!='':
+            df = df[df['AlaImpPiezaWfeJaula'] == jaula]
+        if lote!='':
+            df = df[df['AlaImpPiezaWfeLote'] == lote]
+        df['AlaImpPiezaWfeFechaHora'] = pd.to_datetime(df['AlaImpPiezaWfeFechaHora'])
+        if len(df) == 0:
+            st.warning('Sin registros en el día ' + str(fecha_inicio) ) 
+            return
+        st.write("Vista Previa:")  
+        st.dataframe(df.head(10))
+        ### Calculo de grafico y etc xD 
+        
         if periodo == "Un día":  
             fig = px.histogram(df, x='AlaImpPiezaWfePesoNeto' )
             fig.update_layout(width = 600, height = 600, title = 'Peso salmón en marel  ' + str(fecha_inicio))
