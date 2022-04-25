@@ -1,0 +1,14 @@
+# Credentials for database
+db:
+    username: 'usr_alaya'
+    password: 'Mowi#2022'
+    host: '10.56.110.225'
+    database: 'IRPM'
+    port: '5432'
+
+users:
+    Diego: '1234' 
+    Philip: '1234'
+    admin: 'Alaya'
+date:
+    lastupdate: '08/12/2021'
