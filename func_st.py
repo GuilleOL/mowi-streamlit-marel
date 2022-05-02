@@ -1,6 +1,5 @@
 from calendar import month
 import datetime
-from tkinter import Y
 import streamlit as st
 import sqlalchemy
 from sql_engine import sql_engine
@@ -131,41 +130,44 @@ def pieza_a_pieza(dfname):
                 return
 
 
+    ### Aquí define el df
+    query1 = """select * from [dbo].[vAlaya_recepcion] where AlaImpPiezaWfeFechaHora >= '{}' and AlaImpPiezaWfeFechaHora < '{}'""".format(fecha_inicio, fecha_final)
+    ## EngineAzure
+    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+
+
     stb.markdown(center_title('Filtrar por:'),
                  unsafe_allow_html=True)
     
-
+    centro = stb.selectbox("Centro:", [''] + list(df['AlaImpPiezaWfeCentro'].unique()) )
+    jaula = stb.selectbox("Jaula:", [''] + list(df['AlaImpPiezaWfeJaula'].unique()) )
+    lote = stb.selectbox("Lote:", [''] + list(df['AlaImpPiezaWfeLote'].unique()) )
+    
+    if centro!='':
+        df = df[df['AlaImpPiezaWfeCentro'] == centro]
+    if jaula!='':
+        df = df[df['AlaImpPiezaWfeJaula'] == jaula]
+    if lote!='':
+        df = df[df['AlaImpPiezaWfeLote'] == lote]
+    df['AlaImpPiezaWfeFechaHora'] = pd.to_datetime(df['AlaImpPiezaWfeFechaHora'])
+    if len(df) == 0:
+        st.warning('Sin registros en el día ' + str(fecha_inicio) ) 
+        return
+    st.write("Vista Previa:")  
+    st.dataframe(df.head(10))
+    ### Calculo de grafico y etc xD 
+    
     if st.button("Graficar"):
-        ### Aquí define el df
-        query1 = """select * from [dbo].[vAlaya_recepcion] where AlaImpPiezaWfeFechaHora >= '{}' and AlaImpPiezaWfeFechaHora < '{}'""".format(fecha_inicio, fecha_final)
-        ## EngineAzure
-        df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
         
         #
         ## Filtro de fechas
-        if periodo == "Un día":  
-            mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
-        else:
-            mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
-        df = df[mask]
+        # if periodo == "Un día":  
+        #     mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
+        # else:
+        #     mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
+        # df = df[mask]
         
-        centro = stb.selectbox("Centro:", [''] + list(df['AlaImpPiezaWfeCentro'].unique()) )
-        jaula = stb.selectbox("Jaula:", [''] + list(df['AlaImpPiezaWfeJaula'].unique()) )
-        lote = stb.selectbox("Lote:", [''] + list(df['AlaImpPiezaWfeLote'].unique()) )
-        
-        if centro!='':
-            df = df[df['AlaImpPiezaWfeCentro'] == centro]
-        if jaula!='':
-            df = df[df['AlaImpPiezaWfeJaula'] == jaula]
-        if lote!='':
-            df = df[df['AlaImpPiezaWfeLote'] == lote]
-        df['AlaImpPiezaWfeFechaHora'] = pd.to_datetime(df['AlaImpPiezaWfeFechaHora'])
-        if len(df) == 0:
-            st.warning('Sin registros en el día ' + str(fecha_inicio) ) 
-            return
-        st.write("Vista Previa:")  
-        st.dataframe(df.head(10))
-        ### Calculo de grafico y etc xD 
+       
         
         if periodo == "Un día":  
             fig = px.histogram(df, x='AlaImpPiezaWfePesoNeto' )
