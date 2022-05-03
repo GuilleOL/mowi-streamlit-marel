@@ -366,7 +366,7 @@ def produccion(dfname):
     #if st.button("Graficar"):
 
 
-#@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True)
 def read_bateas(fechainicial,fechafinal):
     
     engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
@@ -398,9 +398,7 @@ def bateas(dfname):
     ## EngineAzure
     df = read_bateas(fecha_inicio,fecha_final)
     df['Kilo/Pieza'] = df['AlaImpBatKilos']/df['AlaImpBatPiezas']
-    st.dataframe(df)
-    df2 = df[['AlaImpBatKilos', 'AlaImpBatPiezas', 'AlaImpBatCentro', 'Kilo/Pieza']].groupby('AlaImpBatCentro').mean()
-    st.table(df2)
+    
 
     stb.markdown(center_title('Filtrar por:'),
                  unsafe_allow_html=True)
@@ -411,6 +409,10 @@ def bateas(dfname):
 
     if centro !='':
         df = df[df['AlaImpBatCentro'] == centro]
+    
+    st.dataframe(df)
+    df2 = df[['AlaImpBatKilos', 'AlaImpBatPiezas', 'AlaImpBatCentro', 'Kilo/Pieza']].groupby('AlaImpBatCentro').mean()
+    st.table(df2)
 
     #if lote!='':
     #    df = df[df['AlaImpConLote'] == lote]
