@@ -104,40 +104,38 @@ def pieza_a_pieza(dfname):
     else:    
         stb.write("Informes de la Marel")
         col_izq, col_der = stb.columns([3, 3])
+        fecha_final = col_der.date_input("Fecha final", datetime.date(2022, 2, 9))
         if periodo=="Diario":
-            fecha_inicio = col_izq.date_input("Fecha inicial", datetime.date(2022, 2, 5)) 
-        elif periodo=="Semanal":
-            fecha_inicio = col_izq.date_input("Fecha inicial", datetime.date(2021, 10, 5)) 
-        elif periodo=="Mensual":
-            fecha_inicio = col_izq.date_input("Fecha inicial", datetime.date(2021, 10, 5)) 
-        else:
-            fecha_inicio = col_izq.date_input("Fecha inicial", datetime.date(2019, 2, 5)) 
-        fecha_final = col_der.date_input("Fecha final", datetime.date(2022, 2, 9)) 
-        if fecha_inicio >= fecha_final: 
-            stb.error('No puede elegir una fecha final que termine antes que la fecha inicial.') 
-            return
-        if periodo=="Diario":
+            fecha_inicio = col_izq.date_input("Fecha inicial", datetime.date(2022, 2, 5))
             if  fecha_final - fecha_inicio > datetime.timedelta(days= 8): 
                 stb.error('No se puede elegir con una diferencia de más de 8 días') 
-                return
-        if periodo=="Semanal":
+                return 
+        elif periodo=="Semanal":
+            fecha_inicio = col_izq.date_input("Fecha inicial", datetime.date(2021, 10, 5)) 
             if  fecha_final - fecha_inicio > datetime.timedelta(weeks= 52): 
                 stb.error('No se puede elegir con una diferencia de más de 52 semanas') 
                 return
-        if periodo=="Mensual":
+        elif periodo=="Mensual":
+            fecha_inicio = col_izq.date_input("Fecha inicial", datetime.date(2021, 10, 5))
             if  fecha_final - fecha_inicio > datetime.timedelta(weeks= 105): 
                 stb.error('No se puede elegir con una diferencia de más de 24 meses') 
-                return
-
-
-    ### Aquí define el df
-    query1 = """select * from [dbo].[vAlaya_recepcion] where AlaImpPiezaWfeFechaHora >= '{}' and AlaImpPiezaWfeFechaHora < '{}'""".format(fecha_inicio, fecha_final)
-    ## EngineAzure
-    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+                return 
+        else:
+            fecha_inicio = col_izq.date_input("Fecha inicial", datetime.date(2019, 2, 5)) 
+         
+        if fecha_inicio >= fecha_final: 
+            stb.error('No puede elegir una fecha final que termine antes que la fecha inicial.') 
+            return
+            
 
 
     stb.markdown(center_title('Filtrar por:'),
                  unsafe_allow_html=True)
+    
+    ### Aquí define el df
+    query1 = """select * from [dbo].[vAlaya_recepcion] where AlaImpPiezaWfeFechaHora >= '{}' and AlaImpPiezaWfeFechaHora < '{}'""".format(fecha_inicio, fecha_final)
+    ## EngineAzure
+    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
     
     centro = stb.selectbox("Centro:", [''] + list(df['AlaImpPiezaWfeCentro'].unique()) )
     jaula = stb.selectbox("Jaula:", [''] + list(df['AlaImpPiezaWfeJaula'].unique()) )
@@ -155,19 +153,10 @@ def pieza_a_pieza(dfname):
         return
     st.write("Vista Previa:")  
     st.dataframe(df.head(10))
-    ### Calculo de grafico y etc xD 
-    
+
     if st.button("Graficar"):
-        
-        #
-        ## Filtro de fechas
-        # if periodo == "Un día":  
-        #     mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
-        # else:
-        #     mask = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(fecha_inicio) ) & (df['AlaImpPiezaWfeFechaHora'] < pd.to_datetime(fecha_final) )
-        # df = df[mask]
-        
-       
+
+        ### Calculo de grafico y etc xD 
         
         if periodo == "Un día":  
             fig = px.histogram(df, x='AlaImpPiezaWfePesoNeto' )
@@ -202,8 +191,11 @@ def pieza_a_pieza(dfname):
             if periodo=="Semanal": freq = 'W'
             if periodo=="Mensual": freq = 'MS'
             if periodo=="Anual": freq = 'A'
-            periodos = pd.date_range(start= fecha_inicio,end= fecha_final, freq= freq ).tolist()
+            periodos = pd.date_range(start= fecha_inicio,end= fecha_final, freq= freq )
+            print(periodos)
+            print(fecha_final)
             periodos.append(fecha_final)
+
             if periodos == []:
                 periodos = [fecha_inicio, fecha_final]
                 st.warning("El periodo elegido es menor al que se quiere analizar")
@@ -244,15 +236,200 @@ def readme( sdate ):
     st.write(" Bienvenido a la plataforma de datos mowi, estos set de datos fueron actualizados el día {}".format(sdate))
     pass
 
+
+
+
 def consumos(dfname):
-    df = read_df(dfname)
-    st.dataframe(df.head(10))
+    #df = read_df(dfname)
+    # SideBar
+    stb = st.sidebar
+    
+    stb.write("En este set de datos se puede hacer un análisis de los datos tomados por la tabla producción.")
+    
+    stb.markdown(center_title('Seleccionar fecha:'),
+                 unsafe_allow_html=True)
+
+    
+    col_izq, col_der = stb.columns([3, 3])
+    
+    fecha_inicio = col_izq.date_input("Fecha Inicio", datetime.date(2022, 1, 3))
+    fecha_final = col_der.date_input("Fecha Final", datetime.date(2022, 2, 4))
+    
+    if fecha_final <= fecha_inicio:
+        stb.error('No puede elegir una fecha final que termine antes que la fecha inicial.') 
+        return
+    
+    query1 = """select * from [dbo].[vAlaya_consumos] where AlaImpConFecHorReg >= '{}' and AlaImpConFecHorReg < '{}'""".format(fecha_inicio, fecha_final)
+
+    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+    df['Kilo/Pieza'] = df['AlaImpConKilos']/df['AlaImpConPiezas']
+    
+
+    
+    
+
+    stb.markdown(center_title('Filtrar por:'),
+                 unsafe_allow_html=True)
+
+    centro = stb.selectbox("Centro:", [''] + list(df['AlaImpConCentro'].unique()) )
+    
+    
+
+    if centro!='':
+        df = df[df['AlaImpConCentro'] == centro]
+    
+    df2 = df[['AlaImpConKilos', 'AlaImpConPiezas', 'AlaImpConCentro', 'Kilo/Pieza']].groupby('AlaImpConCentro').mean()
+    df2 = df2.rename(columns={'AlaImpConKilos': 'Kilos Promedio', 'AlaImpConPiezas': 'Piezas Promedio', 'Kilo/Pieza': 'Kilo/Pieza Promedio'})
+
+    #df['AlaImpPiezaWfeFechaHora'] = pd.to_datetime(df['AlaImpPiezaWfeFechaHora'])
+    if len(df) == 0:
+        st.warning('Sin registros en el día ' + str(fecha_inicio) ) 
+        return
+
+
+    df['AlaImpConFecHorReg'] = pd.to_datetime(df['AlaImpConFecHorReg']).dt.date
+    df_plot = df[['AlaImpConFecHorReg', 'AlaImpConCentro', 'AlaImpConJaula', 'Kilo/Pieza']].groupby(['AlaImpConFecHorReg', 'AlaImpConCentro']).mean().reset_index()
+
+
+    #st.dataframe(df_plot)
+
+    fig = px.line(df_plot, x='AlaImpConFecHorReg', y='Kilo/Pieza', color='AlaImpConCentro')
+    fig.update_layout(autosize=True)
+
+    st.dataframe(df)
+    st.table(df2)
+    st.plotly_chart(fig)  
+
     pass
+
+    
+
+
 def produccion(dfname):
-    df = read_df(dfname)
-    st.dataframe(df.head(10))
+    #df = read_df(dfname)
+    # SideBar
+    stb = st.sidebar
+    
+    stb.write("En este set de datos se puede hacer un análisis de los datos tomados por la tabla producción.")
+    
+    stb.markdown(center_title('Seleccionar fecha:'),
+                 unsafe_allow_html=True)
+
+    col_izq, col_der = stb.columns([3, 3])
+    
+    fecha_inicio = col_izq.date_input("Fecha Inicio", datetime.date(2022, 1, 3))
+    fecha_final = col_der.date_input("Fecha Final", datetime.date(2022, 2, 4))
+    
+    if fecha_final <= fecha_inicio:
+        stb.error('No puede elegir una fecha final que termine antes que la fecha inicial.') 
+        return
+    
+    
+    query1 = """select * from [dbo].[vAlaya_produccion] where AlaImpPackFechaHora >= '{}' and AlaImpPackFechaHora < '{}'""".format(fecha_inicio, fecha_final)
+    ## EngineAzure
+    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+    df['Kilo/Pieza'] = df['AlaImpPacksPesoNominal']/df['AlaImpPacksPiezas']
+    st.dataframe(df)
+    df2 = df[['AlaImpPacksPesoNominal', 'AlaImpPacksPiezas', 'AlaImpPackTipProd', 'Kilo/Pieza']].groupby('AlaImpPackTipProd').mean()
+    st.table(df2)
+
+    stb.markdown(center_title('Filtrar por:'),
+                 unsafe_allow_html=True)
+
+    producto = stb.selectbox("Producto:", [''] + list(df['AlaImpPackTipProd'].unique()) )
+    
+    #lote = stb.selectbox("Lote:", [''] + list(df['AlaImpConLote'].unique()) )
+
+    if producto!='':
+        df = df[df['AlaImpPackTipProd'] == producto]
+
+    #if lote!='':
+    #    df = df[df['AlaImpConLote'] == lote]
+
+    #df['AlaImpPiezaWfeFechaHora'] = pd.to_datetime(df['AlaImpPiezaWfeFechaHora'])
+    if len(df) == 0:
+        st.warning('Sin registros en el día ' + str(fecha_inicio) ) 
+        return
+
+    #if st.button("Graficar"):
+    df['AlaImpPackFechaHora'] = pd.to_datetime(df['AlaImpPackFechaHora']).dt.date
+    df_plot = df[['AlaImpPackFechaHora', 'AlaImpPackTipProd', 'Kilo/Pieza']].groupby(['AlaImpPackFechaHora', 'AlaImpPackTipProd']).mean().reset_index()
+    
+    
+    fig = px.line(df_plot, x='AlaImpPackFechaHora', y='Kilo/Pieza', color='AlaImpPackTipProd')
+    fig.update_layout(autosize=True)
+    st.plotly_chart(fig)  
+
+    
     pass
+
+    #if st.button("Graficar"):
+
+
+#@st.cache(suppress_st_warning=True)
+def read_bateas(fechainicial,fechafinal):
+    
+    engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
+    engineAzure = sqlalchemy.create_engine(engine_path)
+    query1 = """select * from [dbo].[vAlaya_bateas] where AlaImpBatFecDesp >= '{}' and AlaImpBatFecDesp < '{}'""".format(fechainicial, fechafinal)
+    ## EngineAzure
+    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+    return df 
+
 def bateas(dfname):
-    df = read_df(dfname)
-    st.dataframe(df.head(10))
+    #df = read_df(dfname)
+    # SideBar
+    stb = st.sidebar
+    
+    stb.write("En este set de datos se puede hacer un análisis de los datos tomados por la tabla bateas.")
+
+    stb.markdown(center_title('Seleccionar fecha:'),
+                 unsafe_allow_html=True)
+
+    col_izq, col_der = stb.columns([3, 3])
+    
+    fecha_inicio = col_izq.date_input("Fecha Inicio", datetime.date(2022, 1, 3))
+    fecha_final = col_der.date_input("Fecha Final", datetime.date(2022, 2, 4))
+    
+    if fecha_final <= fecha_inicio:
+        stb.error('No puede elegir una fecha final que termine antes que la fecha inicial.') 
+        return
+        
+    ## EngineAzure
+    df = read_bateas(fecha_inicio,fecha_final)
+    df['Kilo/Pieza'] = df['AlaImpBatKilos']/df['AlaImpBatPiezas']
+    st.dataframe(df)
+    df2 = df[['AlaImpBatKilos', 'AlaImpBatPiezas', 'AlaImpBatCentro', 'Kilo/Pieza']].groupby('AlaImpBatCentro').mean()
+    st.table(df2)
+
+    stb.markdown(center_title('Filtrar por:'),
+                 unsafe_allow_html=True)
+
+    centro = stb.selectbox("Centro:", [''] + list(df['AlaImpBatCentro'].unique()) )
+    
+    #lote = stb.selectbox("Lote:", [''] + list(df['AlaImpConLote'].unique()) )
+
+    if centro !='':
+        df = df[df['AlaImpBatCentro'] == centro]
+
+    #if lote!='':
+    #    df = df[df['AlaImpConLote'] == lote]
+
+    #df['AlaImpPiezaWfeFechaHora'] = pd.to_datetime(df['AlaImpPiezaWfeFechaHora'])
+    if len(df) == 0:
+        st.warning('Sin registros en el día ' + str(fecha_inicio) ) 
+        return
+
+
+    df['AlaImpBatFecDesp'] = pd.to_datetime(df['AlaImpBatFecDesp']).dt.date
+    df_plot = df[['AlaImpBatFecDesp', 'AlaImpBatCentro', 'Kilo/Pieza']].groupby(['AlaImpBatFecDesp', 'AlaImpBatCentro']).mean().reset_index()
+
+
+    #st.dataframe(df_plot)
+
+    fig = px.line(df_plot, x='AlaImpBatFecDesp', y='Kilo/Pieza', color='AlaImpBatCentro')
+    fig.update_layout(autosize=True)
+    st.plotly_chart(fig)  
+
+    
     pass

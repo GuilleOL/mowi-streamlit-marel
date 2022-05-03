@@ -13,7 +13,7 @@ st.set_page_config(page_title="Despcritive - Mowi",
 #option = head_st("./", options=["","Bateas","Pieza a pieza", "Consumos","Produccion"] ,pass_fname="./conf.yml")
 
 script_path = os.path.dirname(__file__)
-option = head_st( script_path , options=["","Pieza a pieza"] ,pass_fname="./conf.yml")
+option = head_st( script_path , options=["","Pieza a pieza", "Consumos", "Produccion", "Bateas"] ,pass_fname="./conf.yml")
 
 
 ## Selección de menu
