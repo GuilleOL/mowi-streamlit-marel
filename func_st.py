@@ -9,8 +9,6 @@ import pandas as pd
 import plotly.express as px
 import os 
 
-engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
-engineAzure = sqlalchemy.create_engine(engine_path)
 
 @st.cache
 def read_df(dfname):
@@ -81,6 +79,16 @@ def head_st(path_base, options = ["Sin opciones"], pass_fname=None):
     return page
 
 
+@st.cache(suppress_st_warning=True)
+def read_marel(fechainicial,fechafinal):
+    
+    engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
+    engineAzure = sqlalchemy.create_engine(engine_path)
+    query1 = """select * from [dbo].[vAlaya_recepcion] where AlaImpPiezaWfeFechaHora >= '{}' and AlaImpPiezaWfeFechaHora < '{}'""".format(fechainicial, fechafinal)
+    ## EngineAzure
+    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+    return df
+
 def pieza_a_pieza(dfname):
     #df = read_df(dfname)
     
@@ -133,9 +141,8 @@ def pieza_a_pieza(dfname):
                  unsafe_allow_html=True)
     
     ### Aquí define el df
-    query1 = """select * from [dbo].[vAlaya_recepcion] where AlaImpPiezaWfeFechaHora >= '{}' and AlaImpPiezaWfeFechaHora < '{}'""".format(fecha_inicio, fecha_final)
+    df = read_marel(fecha_inicio, fecha_final)
     ## EngineAzure
-    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
     
     centro = stb.selectbox("Centro:", [''] + list(df['AlaImpPiezaWfeCentro'].unique()) )
     jaula = stb.selectbox("Jaula:", [''] + list(df['AlaImpPiezaWfeJaula'].unique()) )
@@ -191,14 +198,15 @@ def pieza_a_pieza(dfname):
             if periodo=="Semanal": freq = 'W'
             if periodo=="Mensual": freq = 'MS'
             if periodo=="Anual": freq = 'A'
-            periodos = pd.date_range(start= fecha_inicio,end= fecha_final, freq= freq )
-            print(periodos)
-            print(fecha_final)
-            periodos.append(fecha_final)
+            periodos = pd.date_range(start= fecha_inicio,end= fecha_final, freq= freq ).tolist()
+            
+
 
             if periodos == []:
                 periodos = [fecha_inicio, fecha_final]
                 st.warning("El periodo elegido es menor al que se quiere analizar")
+            else:
+                periodos.append(fecha_final)
             for index, value in enumerate(periodos[:-1]):  
                 mask_date = (df['AlaImpPiezaWfeFechaHora'] >= pd.to_datetime(periodos[index]) ) & (df['AlaImpPiezaWfeFechaHora'] <  pd.to_datetime(periodos[index+1]) )
                 df2  = df[mask_date]
@@ -207,7 +215,7 @@ def pieza_a_pieza(dfname):
                 else:
                     fig = px.histogram(df2, x='AlaImpPiezaWfePesoNeto' )
                     fig.update_layout(width = 600, height = 600, title = 'Peso salmón en marel  Desde:' + str(periodos[index]).split(" ")[0]  + ' - Hasta:'  + str(periodos[index+1]).split(" ")[0]  )
-                    fig2 = px.histogram(df, x='AlaImpPiezaWfePesoNeto',color = 'AlaImpPiezaWfeCentro' )
+                    fig2 = px.histogram(df2, x='AlaImpPiezaWfePesoNeto',color = 'AlaImpPiezaWfeCentro' )
                     fig2.update_layout(width = 600, height = 600, title = 'Peso por Centro' )
                     fig2.update_layout(barmode='overlay')
                     col1, col2= st.columns(2)
@@ -237,6 +245,15 @@ def readme( sdate ):
     pass
 
 
+@st.cache(suppress_st_warning=True)
+def read_consumos(fechainicial,fechafinal):
+    
+    engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
+    engineAzure = sqlalchemy.create_engine(engine_path)
+    query1 = """select * from [dbo].[vAlaya_consumos] where AlaImpConFecHorReg >= '{}' and AlaImpConFecHorReg < '{}'""".format(fechainicial, fechafinal)
+    ## EngineAzure
+    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+    return df
 
 
 def consumos(dfname):
@@ -258,30 +275,24 @@ def consumos(dfname):
     if fecha_final <= fecha_inicio:
         stb.error('No puede elegir una fecha final que termine antes que la fecha inicial.') 
         return
-    
-    query1 = """select * from [dbo].[vAlaya_consumos] where AlaImpConFecHorReg >= '{}' and AlaImpConFecHorReg < '{}'""".format(fecha_inicio, fecha_final)
 
-    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+    df = read_consumos(fecha_inicio,fecha_final)
     df['Kilo/Pieza'] = df['AlaImpConKilos']/df['AlaImpConPiezas']
-    
-
-    
     
 
     stb.markdown(center_title('Filtrar por:'),
                  unsafe_allow_html=True)
 
-    centro = stb.selectbox("Centro:", [''] + list(df['AlaImpConCentro'].unique()) )
-    
-    
+    centro = stb.selectbox("Centro:", [''] + list(df['AlaImpConCentro'].unique()) )   
 
     if centro!='':
         df = df[df['AlaImpConCentro'] == centro]
     
+    st.dataframe(df)
     df2 = df[['AlaImpConKilos', 'AlaImpConPiezas', 'AlaImpConCentro', 'Kilo/Pieza']].groupby('AlaImpConCentro').mean()
     df2 = df2.rename(columns={'AlaImpConKilos': 'Kilos Promedio', 'AlaImpConPiezas': 'Piezas Promedio', 'Kilo/Pieza': 'Kilo/Pieza Promedio'})
+    st.table(df2)
 
-    #df['AlaImpPiezaWfeFechaHora'] = pd.to_datetime(df['AlaImpPiezaWfeFechaHora'])
     if len(df) == 0:
         st.warning('Sin registros en el día ' + str(fecha_inicio) ) 
         return
@@ -296,13 +307,21 @@ def consumos(dfname):
     fig = px.line(df_plot, x='AlaImpConFecHorReg', y='Kilo/Pieza', color='AlaImpConCentro')
     fig.update_layout(autosize=True)
 
-    st.dataframe(df)
-    st.table(df2)
+    
+    
     st.plotly_chart(fig)  
 
     pass
 
+@st.cache(suppress_st_warning=True)
+def read_produccion(fechainicial,fechafinal):
     
+    engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
+    engineAzure = sqlalchemy.create_engine(engine_path)
+    query1 = """select * from [dbo].[vAlaya_produccion] where AlaImpPackFechaHora >= '{}' and AlaImpPackFechaHora < '{}'""".format(fechainicial, fechafinal)
+    ## EngineAzure
+    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+    return df    
 
 
 def produccion(dfname):
@@ -325,13 +344,9 @@ def produccion(dfname):
         return
     
     
-    query1 = """select * from [dbo].[vAlaya_produccion] where AlaImpPackFechaHora >= '{}' and AlaImpPackFechaHora < '{}'""".format(fecha_inicio, fecha_final)
-    ## EngineAzure
-    df = pd.read_sql_query(query1, con=engineAzure, index_col=None)
+    df = read_produccion(fecha_inicio,fecha_final)
     df['Kilo/Pieza'] = df['AlaImpPacksPesoNominal']/df['AlaImpPacksPiezas']
-    st.dataframe(df)
-    df2 = df[['AlaImpPacksPesoNominal', 'AlaImpPacksPiezas', 'AlaImpPackTipProd', 'Kilo/Pieza']].groupby('AlaImpPackTipProd').mean()
-    st.table(df2)
+    
 
     stb.markdown(center_title('Filtrar por:'),
                  unsafe_allow_html=True)
@@ -342,6 +357,11 @@ def produccion(dfname):
 
     if producto!='':
         df = df[df['AlaImpPackTipProd'] == producto]
+    
+    st.dataframe(df)
+    df2 = df[['AlaImpPacksPesoNominal', 'AlaImpPacksPiezas', 'AlaImpPackTipProd', 'Kilo/Pieza']].groupby('AlaImpPackTipProd').mean()
+    df2 = df2.rename(columns={'AlaImpPacksPesoNominal': 'Kilos Promedio', 'AlaImpPacksPiezas': 'Piezas Promedio', 'Kilo/Pieza': 'Kilo/Pieza Promedio'})
+    st.table(df2)
 
     #if lote!='':
     #    df = df[df['AlaImpConLote'] == lote]
@@ -412,6 +432,7 @@ def bateas(dfname):
     
     st.dataframe(df)
     df2 = df[['AlaImpBatKilos', 'AlaImpBatPiezas', 'AlaImpBatCentro', 'Kilo/Pieza']].groupby('AlaImpBatCentro').mean()
+    df2 = df2.rename(columns={'AlaImpBatKilos': 'Kilos Promedio', 'AlaImpBatPiezas': 'Piezas Promedio', 'Kilo/Pieza': 'Kilo/Pieza Promedio'})
     st.table(df2)
 
     #if lote!='':
