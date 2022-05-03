@@ -79,7 +79,7 @@ def head_st(path_base, options = ["Sin opciones"], pass_fname=None):
     return page
 
 
-@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def read_marel(fechainicial,fechafinal):
     
     engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
@@ -245,7 +245,7 @@ def readme( sdate ):
     pass
 
 
-@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def read_consumos(fechainicial,fechafinal):
     
     engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
@@ -313,7 +313,7 @@ def consumos(dfname):
 
     pass
 
-@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def read_produccion(fechainicial,fechafinal):
     
     engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
@@ -386,7 +386,7 @@ def produccion(dfname):
     #if st.button("Graficar"):
 
 
-@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def read_bateas(fechainicial,fechafinal):
     
     engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
