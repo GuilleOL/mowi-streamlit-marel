@@ -82,7 +82,7 @@ def head_st(path_base, options = ["Sin opciones"], pass_fname=None):
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def read_marel(fechainicial,fechafinal):
     
-    engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
+    engine_path = 'mssql+pymssql://sa:sa#34.k45@SERVER-ALAYA\MSSQLSERVER2/MOWIDB'
     engineAzure = sqlalchemy.create_engine(engine_path)
     query1 = """select * from [dbo].[vAlaya_recepcion] where AlaImpPiezaWfeFechaHora >= '{}' and AlaImpPiezaWfeFechaHora < '{}'""".format(fechainicial, fechafinal)
     ## EngineAzure
@@ -248,7 +248,7 @@ def readme( sdate ):
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def read_consumos(fechainicial,fechafinal):
     
-    engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
+    engine_path = 'mssql+pymssql://sa:sa#34.k45@SERVER-ALAYA\MSSQLSERVER2/MOWIDB'
     engineAzure = sqlalchemy.create_engine(engine_path)
     query1 = """select * from [dbo].[vAlaya_consumos] where AlaImpConFecHorReg >= '{}' and AlaImpConFecHorReg < '{}'""".format(fechainicial, fechafinal)
     ## EngineAzure
@@ -316,7 +316,7 @@ def consumos(dfname):
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def read_produccion(fechainicial,fechafinal):
     
-    engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
+    engine_path = 'mssql+pymssql://sa:sa#34.k45@SERVER-ALAYA\MSSQLSERVER2/MOWIDB'
     engineAzure = sqlalchemy.create_engine(engine_path)
     query1 = """select * from [dbo].[vAlaya_produccion] where AlaImpPackFechaHora >= '{}' and AlaImpPackFechaHora < '{}'""".format(fechainicial, fechafinal)
     ## EngineAzure
@@ -389,7 +389,7 @@ def produccion(dfname):
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def read_bateas(fechainicial,fechafinal):
     
-    engine_path = 'mssql+pymssql://Adminalaya:Alaya.2022@mowidbserver.database.windows.net/MowiDB'
+    engine_path = 'mssql+pymssql://sa:sa#34.k45@SERVER-ALAYA\MSSQLSERVER2/MOWIDB'
     engineAzure = sqlalchemy.create_engine(engine_path)
     query1 = """select * from [dbo].[vAlaya_bateas] where AlaImpBatFecDesp >= '{}' and AlaImpBatFecDesp < '{}'""".format(fechainicial, fechafinal)
     ## EngineAzure
