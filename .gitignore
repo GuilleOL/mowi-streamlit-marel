@@ -2,3 +2,6 @@
 /__pycache__/
 /data/
 nohup.out
+Procfile
+README.md
+setup.sh
